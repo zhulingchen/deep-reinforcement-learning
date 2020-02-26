@@ -21,7 +21,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed, use_double=False):
+    def __init__(self, state_size, action_size, seed, use_double=False, use_dueling=False):
         """Initialize an Agent object.
         
         Params
@@ -30,6 +30,7 @@ class Agent():
             action_size (int): dimension of each action
             seed (int): random seed
             use_double (bool): whether to use double deep Q-learning
+            use_dueling (bool): whether to use the dueling network architecture
         """
         self.state_size = state_size
         self.action_size = action_size
@@ -37,8 +38,8 @@ class Agent():
         self.use_double = use_double
 
         # Q-Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_local = QNetwork(state_size, action_size, seed, use_dueling=use_dueling).to(device)
+        self.qnetwork_target = QNetwork(state_size, action_size, seed, use_dueling=use_dueling).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
 
         # Replay memory
