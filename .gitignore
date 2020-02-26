@@ -108,3 +108,6 @@ ENV/
 
 # Project 1: Navigation
 Banana*
+
+# Project 2: Continuous Control
+Reacher*
