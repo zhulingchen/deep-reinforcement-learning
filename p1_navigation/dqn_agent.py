@@ -14,7 +14,7 @@ GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate
 TRAIN_EVERY = 4         # how often to train a batch
-UPDATE_EVERY = 16       # how often to update the network
+UPDATE_EVERY = 20       # how often to update the network
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -44,7 +44,8 @@ class Agent():
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
-        # Initialize time step (for updating every UPDATE_EVERY steps)
+
+        # Initialize time step
         self.t_step = 0
     
     def step(self, state, action, reward, next_state, done):
@@ -54,14 +55,15 @@ class Agent():
         # Update time step
         self.t_step += 1
 
-        # If enough samples are available in memory, get random subset and learn
-        if (len(self.memory) >= BATCH_SIZE) and (self.t_step % TRAIN_EVERY == 0):
-            experiences = self.memory.sample()
-            self.learn(experiences, GAMMA)
-
-        # Update target network every UPDATE_EVERY time steps.
-        if self.t_step % UPDATE_EVERY == 0:
-            self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
+        # If enough samples are available in memory,
+        if len(self.memory) >= BATCH_SIZE:
+            # Get random subset and learn every TRAIN_EVERY time steps,
+            if self.t_step % TRAIN_EVERY == 0:
+                experiences = self.memory.sample()
+                self.learn(experiences, GAMMA)
+            # Update target network every UPDATE_EVERY time steps.
+            if self.t_step % UPDATE_EVERY == 0:
+                self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
