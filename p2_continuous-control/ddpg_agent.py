@@ -9,18 +9,18 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e6)  # replay buffer size
-BATCH_SIZE = 128        # minibatch size
+BUFFER_SIZE = int(1e5)  # replay buffer size
+BATCH_SIZE = 1024       # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor
-LR_CRITIC = 3e-4        # learning rate of the critic
+LR_ACTOR = 1e-3         # learning rate of the actor
+LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
-TRAIN_EVERY = 20        # how often to train a batch
-TRAIN_STEPS = 10        # how many training steps when a batch is trained
-# UPDATE_EVERY = 1        # how often to update the network
+TRAIN_EVERY = 5         # how often to train a batch
+TRAIN_STEPS = 3         # how many training steps when a batch is trained
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class Agent():
     """Interacts with and learns from the environment."""
@@ -75,25 +75,16 @@ class Agent():
                 for _ in range(TRAIN_STEPS):
                     experiences = self.memory.sample()
                     self.learn(experiences, GAMMA)
-            # # Update target networks every UPDATE_EVERY time steps.
-            # if self.t_step % UPDATE_EVERY == 0:
-            #     self.soft_update(self.critic_local, self.critic_target, TAU)
-            #     self.soft_update(self.actor_local, self.actor_target, TAU)
 
-    def act(self, states, eps=0.0, add_noise=True):
+    def act(self, states, add_noise=True):
         """Returns epsilon-greedy actions for given state as per current policy."""
         states = torch.from_numpy(states).float().to(device)
         self.actor_local.eval()
-        actions = np.zeros((self.num_agents, self.action_size))
         with torch.no_grad():
-            for idx_agent, state_agent in enumerate(states):
-                if random.random() >= eps:
-                    actions[idx_agent, :] = self.actor_local(state_agent).cpu().data.numpy()
-                else:
-                    actions[idx_agent, :] = np.random.randn(self.action_size)
+            actions = self.actor_local(states).cpu().data.numpy()
         self.actor_local.train()
         if add_noise:
-            actions += self.noise.sample()
+            actions += np.concatenate([np.expand_dims(self.noise.sample(), axis=0) for _ in range(self.num_agents)], axis=0)
         return np.clip(actions, -1, 1)
 
     def reset(self):
@@ -140,6 +131,7 @@ class Agent():
         # ----------------------- update target networks ----------------------- #
         self.soft_update(self.critic_local, self.critic_target, TAU)
         self.soft_update(self.actor_local, self.actor_target, TAU)
+        
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
@@ -154,6 +146,7 @@ class Agent():
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
+            
 class OUNoise:
     """Ornstein-Uhlenbeck process."""
 
