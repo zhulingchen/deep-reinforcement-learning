@@ -32,13 +32,22 @@ Note that your project submission need only solve one of the two versions of the
 
 The task is episodic, and in order to solve the environment,  your agent must get an average score of +30 over 100 consecutive episodes.
 
-#### Option 2: Solve the Second Version
+#### Option 2: Solve the Second Version (This version has been solved in [Continuous_Control.ipynb](Continuous_Control.ipynb))
 
 The barrier for solving the second version of the environment is slightly different, to take into account the presence of many agents.  In particular, your agents must get an average score of +30 (over 100 consecutive episodes, and over all agents).  Specifically,
 - After each episode, we add up the rewards that each agent received (without discounting), to get a score for each agent.  This yields 20 (potentially different) scores.  We then take the average of these 20 scores. 
 - This yields an **average score** for each episode (where the average is over all 20 agents).
 
 The environment is considered solved, when the average (over 100 episodes) of those average scores is at least +30. 
+
+### Dependencies
+
+Python 3.6
+[numpy](https://www.numpy.org)==1.18.1
+[matplotlib](https://matplotlib.org)==3.1.3
+[unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0
+[torch](https://pytorch.org/)==1.0.0
+[torchsummary](https://github.com/sksq96/pytorch-summary)==1.5.1
 
 ### Getting Started
 
