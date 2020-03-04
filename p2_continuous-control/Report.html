@@ -13371,6 +13371,16 @@ Average score (random actions) for this episode: 0.11 (Min score: 0.00, Max scor
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Algorithm-Description">Algorithm Description<a class="anchor-link" href="#Algorithm-Description">&#182;</a></h4><p>This environment is solved using the Deep Deterministic Policy Gradients (DDPG) algorithm. <a href="https://towardsdatascience.com/deep-deterministic-policy-gradients-explained-2d94655a9b7b">This article</a> is a good resource for DDPG.</p>
+<p>Below shows the basic implementation pseudo-code of DDPG, taken from the original DDPG paper "<a href="https://arxiv.org/abs/1509.02971">Continuous Control With Deep Reinforcement Learning</a>"(Lillicrap et al, 2015):
+<img src="ddpg.png" alt="DDPG Algorithm"></p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h4 id="Below-describes-the-network-architectures-of-the-Actor-and-Critic-networks:">Below describes the network architectures of the Actor and Critic networks:<a class="anchor-link" href="#Below-describes-the-network-architectures-of-the-Actor-and-Critic-networks:">&#182;</a></h4>
 <pre><code>Actor network:
 ----------------------------------------------------------------
