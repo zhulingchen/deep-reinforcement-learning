@@ -1,5 +1,6 @@
 [//]: # (Image References)
 
+[image0]: https://user-images.githubusercontent.com/10624937/42386929-76f671f0-8106-11e8-9376-f17da2ae852e.png "Kernel"
 [image1]: https://user-images.githubusercontent.com/10624937/43851024-320ba930-9aff-11e8-8493-ee547c6af349.gif "Trained Agent"
 [image2]: https://user-images.githubusercontent.com/10624937/43851646-d899bf20-9b00-11e8-858c-29b5c2c94ccc.png "Crawler"
 
@@ -42,12 +43,34 @@ The environment is considered solved, when the average (over 100 episodes) of th
 
 ### Dependencies
 
-Python 3.6  
-[numpy](https://www.numpy.org)==1.18.1  
-[matplotlib](https://matplotlib.org)==3.1.3  
-[unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0  
-[torch](https://pytorch.org/)==1.0.0  
-[torchsummary](https://github.com/sksq96/pytorch-summary)==1.5.1
+1. Create (and activate) a new environment, for example, named `drlnd`, with Python 3.6.
+
+    - __Linux__ or __Mac__: 
+    ```bash
+    conda create --name drlnd python=3.6
+    source activate drlnd
+    ```
+    - __Windows__: 
+    ```bash
+    conda create --name drlnd python=3.6 
+    activate drlnd
+    ```
+
+2. Create an [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) for the `drlnd` environment.  
+    ```bash
+    python -m ipykernel install --user --name drlnd --display-name "drlnd"
+    ```
+
+3. Before running code in a notebook, change the kernel to match the `drlnd` environment by using the drop-down `Kernel` menu. 
+
+    ![Kernel][image0]
+
+4. Install the following dependent packages with `pip`:
+    - [numpy](https://www.numpy.org)==1.18.1  
+    - [matplotlib](https://matplotlib.org)==3.1.3  
+    - [unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0  
+    - [torch](https://pytorch.org/)==1.0.0  
+    - [torchsummary](https://github.com/sksq96/pytorch-summary)==1.5.1
 
 ### Getting Started
 
