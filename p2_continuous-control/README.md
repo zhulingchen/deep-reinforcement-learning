@@ -42,11 +42,11 @@ The environment is considered solved, when the average (over 100 episodes) of th
 
 ### Dependencies
 
-Python 3.6
-[numpy](https://www.numpy.org)==1.18.1
-[matplotlib](https://matplotlib.org)==3.1.3
-[unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0
-[torch](https://pytorch.org/)==1.0.0
+Python 3.6  
+[numpy](https://www.numpy.org)==1.18.1  
+[matplotlib](https://matplotlib.org)==3.1.3  
+[unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0  
+[torch](https://pytorch.org/)==1.0.0  
 [torchsummary](https://github.com/sksq96/pytorch-summary)==1.5.1
 
 ### Getting Started
