@@ -108,6 +108,8 @@ ENV/
 
 # Project 1: Navigation
 Banana*
+VisualBanana*
 
 # Project 2: Continuous Control
 Reacher*
+Crawler*

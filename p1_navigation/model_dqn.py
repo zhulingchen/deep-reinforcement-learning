@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class QNetwork(nn.Module):
     """Actor (Policy) Model."""
 
@@ -19,8 +20,10 @@ class QNetwork(nn.Module):
         self.use_dueling = use_dueling
         self.feature_net = nn.Sequential(
             nn.Linear(state_size, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Linear(128, 64),
+            nn.BatchNorm1d(64),
             nn.ReLU()
         )
         if use_dueling:

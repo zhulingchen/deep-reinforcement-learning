@@ -2,21 +2,22 @@ import numpy as np
 import random
 from collections import namedtuple, deque
 
-from model import QNetwork
+from model_dqn import QNetwork
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
-BATCH_SIZE = 64         # minibatch size
+BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate
 TRAIN_EVERY = 4         # how often to train a batch
-UPDATE_EVERY = 20       # how often to update the network
+TRAIN_STEPS = 2         # how many training steps when a batch is trained
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 class Agent():
     """Interacts with and learns from the environment."""
@@ -59,11 +60,9 @@ class Agent():
         if len(self.memory) >= BATCH_SIZE:
             # Get random subset and learn every TRAIN_EVERY time steps,
             if self.t_step % TRAIN_EVERY == 0:
-                experiences = self.memory.sample()
-                self.learn(experiences, GAMMA)
-            # Update target network every UPDATE_EVERY time steps.
-            if self.t_step % UPDATE_EVERY == 0:
-                self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
+                for _ in range(TRAIN_STEPS):
+                    experiences = self.memory.sample()
+                    self.learn(experiences, GAMMA) 
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
@@ -115,6 +114,9 @@ class Agent():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        
+        # Update target network  
+        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
