@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from model_dqn import QNetwork
-from replay_buffer import ReplayBuffer
+from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
@@ -20,7 +20,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed, use_double=False, use_dueling=False):
+    def __init__(self, state_size, action_size, seed, use_double=False, use_dueling=False, use_per=False):
         """Initialize an Agent object.
         
         Params
@@ -30,11 +30,13 @@ class Agent():
             seed (int): random seed
             use_double (bool): whether to use double deep Q-learning
             use_dueling (bool): whether to use the dueling network architecture
+            use_per (bool): whether to use prioritized replay buffer
         """
         self.state_size = state_size
         self.action_size = action_size
         self.seed = random.seed(seed)
         self.use_double = use_double
+        self.use_per = use_per
 
         # Q-Network
         self.qnetwork_local = QNetwork(state_size, action_size, seed, use_dueling=use_dueling).to(device)
@@ -42,14 +44,62 @@ class Agent():
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
 
         # Replay memory
-        self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
+        if use_per:
+            self.memory = PrioritizedReplayBuffer(BUFFER_SIZE, BATCH_SIZE)
+        else:
+            self.memory = ReplayBuffer(BUFFER_SIZE, BATCH_SIZE, seed)
 
         # Initialize time step
         self.t_step = 0
-    
+
+    def get_Q(self, state, action, reward, next_state, done, gamma, is_train=True):
+        # Get max predicted Q values (for next states) from target model
+        if is_train:
+            if self.use_double:
+                _, idx = self.qnetwork_local(next_state).detach().max(1)
+                Q_target_next = self.qnetwork_target(next_state).detach().gather(1, idx.unsqueeze(1))
+            else:
+                Q_target_next = self.qnetwork_target(next_state).detach().max(1)[0].unsqueeze(1)
+            # Compute Q targets for current states
+            Q_target = reward + (gamma * (1 - done) * Q_target_next)
+            # Get expected Q values from local model
+            Q_expected = self.qnetwork_local(state).gather(1, action)
+        else:
+            self.qnetwork_local.eval()
+            self.qnetwork_target.eval()
+            with torch.no_grad():
+                if self.use_double:
+                    _, idx = self.qnetwork_local(next_state).squeeze().max(0)
+                    Q_target_next = self.qnetwork_target(next_state).squeeze()[idx]
+                else:
+                    Q_target_next = self.qnetwork_target(next_state).squeeze().max()
+                # Compute Q targets for current states
+                Q_target = reward + (gamma * (1 - done) * Q_target_next)
+                # Get expected Q values from local model
+                Q_expected = self.qnetwork_local(state).squeeze()[action]
+            self.qnetwork_local.train()
+            self.qnetwork_target.train()
+        return Q_expected, Q_target
+
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
-        self.memory.add(state, action, reward, next_state, done)
+        if self.use_per:
+            # Convert numpy array to torch tensor
+            state = torch.from_numpy(state).float().unsqueeze(0).to(device)
+            next_state = torch.from_numpy(next_state).float().unsqueeze(0).to(device)
+            done = int(done)
+            # Get max predicted Q values (for next states) from target model
+            Q_expected, Q_target = self.get_Q(state, action, reward, next_state, done, GAMMA, is_train=False)
+            # Convert torch tensor to numpy array
+            state = state.cpu().data.numpy().squeeze()
+            next_state = next_state.cpu().data.numpy().squeeze()
+            done = bool(done)
+            # Calculate error
+            error = Q_expected - Q_target
+            error = error.cpu().data.numpy().item()
+            self.memory.add(state, action, reward, next_state, done, error)
+        else:
+            self.memory.add(state, action, reward, next_state, done)
 
         # Update time step
         self.t_step += 1
@@ -59,8 +109,11 @@ class Agent():
             # Get random subset and learn every TRAIN_EVERY time steps,
             if self.t_step % TRAIN_EVERY == 0:
                 for _ in range(TRAIN_STEPS):
-                    experiences = self.memory.sample()
-                    self.learn(experiences, GAMMA) 
+                    if self.use_per:
+                        experiences, idx_tree, is_weight = self.memory.sample()
+                    else:
+                        experiences = self.memory.sample()
+                    self.learn(experiences, idx_tree, is_weight, GAMMA)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
@@ -73,7 +126,7 @@ class Agent():
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
         self.qnetwork_local.eval()
         with torch.no_grad():
-            action_values = self.qnetwork_local(state)
+            action_values = self.qnetwork_local(state).squeeze()
         self.qnetwork_local.train()
 
         # Epsilon-greedy action selection
@@ -83,31 +136,34 @@ class Agent():
             action = random.choice(np.arange(self.action_size))
         return action.item()
 
-    def learn(self, experiences, gamma):
+    def learn(self, experiences, idx_tree, is_weight, gamma):
         """Update value parameters using given batch of experience tuples.
 
         Params
         ======
+            idx_tree
             experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
             gamma (float): discount factor
         """
         states, actions, rewards, next_states, dones = experiences
 
         # Get max predicted Q values (for next states) from target model
-        if self.use_double:
-            _, idx = self.qnetwork_local(next_states).detach().max(1)
-            Q_targets_next = self.qnetwork_target(next_states).detach().gather(1, idx.unsqueeze(1))
-        else:
-            Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
-        
-        # Compute Q targets for current states 
-        Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
+        Q_expected, Q_targets = self.get_Q(states, actions, rewards, next_states, dones, gamma, is_train=True)
 
-        # Get expected Q values from local model
-        Q_expected = self.qnetwork_local(states).gather(1, actions)
+        # Calculate error
+        errors = Q_expected - Q_targets
+        errors = errors.cpu().data.numpy().squeeze()
+
+        # update priority
+        for i in range(self.memory.batch_size):
+            self.memory.update(idx_tree[i], errors[i])
 
         # Compute loss
-        loss = F.mse_loss(Q_expected, Q_targets)
+        if self.use_per:
+            is_weight = torch.from_numpy(is_weight).float().to(device)
+            loss = (is_weight * (Q_expected - Q_targets) ** 2).mean()
+        else:
+            loss = F.mse_loss(Q_expected, Q_targets)
         
         # Minimize the loss
         self.optimizer.zero_grad()
