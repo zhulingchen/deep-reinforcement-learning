@@ -7,6 +7,7 @@ from model_dqn import QNetwork
 from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
+START_SIZE = int(1e4)   # when to start training
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
@@ -105,15 +106,16 @@ class Agent():
         self.t_step += 1
 
         # If enough samples are available in memory,
-        if len(self.memory) >= BATCH_SIZE:
+        if len(self.memory) >= START_SIZE:
             # Get random subset and learn every TRAIN_EVERY time steps,
             if self.t_step % TRAIN_EVERY == 0:
                 for _ in range(TRAIN_STEPS):
                     if self.use_per:
                         experiences, idx_tree, is_weight = self.memory.sample()
+                        self.learn(experiences, GAMMA, idx_tree, is_weight)
                     else:
                         experiences = self.memory.sample()
-                    self.learn(experiences, idx_tree, is_weight, GAMMA)
+                        self.learn(experiences, GAMMA)
 
     def act(self, state, eps=0.):
         """Returns actions for given state as per current policy.
@@ -136,7 +138,7 @@ class Agent():
             action = random.choice(np.arange(self.action_size))
         return action.item()
 
-    def learn(self, experiences, idx_tree, is_weight, gamma):
+    def learn(self, experiences, gamma, idx_tree=None, is_weight=None):
         """Update value parameters using given batch of experience tuples.
 
         Params
@@ -155,11 +157,14 @@ class Agent():
         errors = errors.cpu().data.numpy().squeeze()
 
         # update priority
-        for i in range(self.memory.batch_size):
-            self.memory.update(idx_tree[i], errors[i])
+        if self.use_per:
+            assert((idx_tree is not None) and (len(idx_tree) > 0))
+            for i in range(self.memory.batch_size):
+                self.memory.update(idx_tree[i], errors[i])
 
         # Compute loss
         if self.use_per:
+            assert ((is_weight is not None) and (is_weight.size > 0))
             is_weight = torch.from_numpy(is_weight).float().to(device)
             loss = (is_weight * (Q_expected - Q_targets) ** 2).mean()
         else:
