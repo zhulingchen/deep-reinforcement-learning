@@ -7,7 +7,7 @@ from model_dqn import QNetwork
 from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
-START_SIZE = int(5e3)   # when to start training
+START_SIZE = int(1e3)   # when to start training
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
