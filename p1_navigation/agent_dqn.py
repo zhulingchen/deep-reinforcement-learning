@@ -12,8 +12,8 @@ BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate
-TRAIN_EVERY = 2         # how often to train a batch
-TRAIN_STEPS = 1         # how many training steps when a batch is trained
+TRAIN_EVERY = 4         # how often to train a batch
+TRAIN_STEPS = 2         # how many training steps when a batch is trained
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
