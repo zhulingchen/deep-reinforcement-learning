@@ -7,13 +7,13 @@ from model_dqn import QNetwork
 from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
-START_SIZE = int(1e4)   # when to start training
+START_SIZE = int(5e3)   # when to start training
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate
-TRAIN_EVERY = 4         # how often to train a batch
-TRAIN_STEPS = 2         # how many training steps when a batch is trained
+TRAIN_EVERY = 2         # how often to train a batch
+TRAIN_STEPS = 1         # how many training steps when a batch is trained
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -70,14 +70,14 @@ class Agent():
             self.qnetwork_target.eval()
             with torch.no_grad():
                 if self.use_double:
-                    _, idx = self.qnetwork_local(next_state).squeeze().max(0)
-                    Q_target_next = self.qnetwork_target(next_state).squeeze()[idx]
+                    _, idx = self.qnetwork_local(next_state).max(1)
+                    Q_target_next = self.qnetwork_target(next_state).gather(1, idx.unsqueeze(1))
                 else:
-                    Q_target_next = self.qnetwork_target(next_state).squeeze().max()
+                    Q_target_next = self.qnetwork_target(next_state).max(1)[0].unsqueeze(1)
                 # Compute Q targets for current states
                 Q_target = reward + (gamma * (1 - done) * Q_target_next)
                 # Get expected Q values from local model
-                Q_expected = self.qnetwork_local(state).squeeze()[action]
+                Q_expected = self.qnetwork_local(state).gather(1, action)
             self.qnetwork_local.train()
             self.qnetwork_target.train()
         return Q_expected, Q_target
@@ -87,12 +87,14 @@ class Agent():
         if self.use_per:
             # Convert numpy array to torch tensor
             state = torch.from_numpy(state).float().unsqueeze(0).to(device)
+            action = torch.from_numpy(np.array([action])).long().unsqueeze(0).to(device)
             next_state = torch.from_numpy(next_state).float().unsqueeze(0).to(device)
             done = int(done)
             # Get max predicted Q values (for next states) from target model
             Q_expected, Q_target = self.get_Q(state, action, reward, next_state, done, GAMMA, is_train=False)
             # Convert torch tensor to numpy array
             state = state.cpu().data.numpy().squeeze()
+            action = action.cpu().data.numpy().item()
             next_state = next_state.cpu().data.numpy().squeeze()
             done = bool(done)
             # Calculate error
@@ -152,21 +154,11 @@ class Agent():
         # Get max predicted Q values (for next states) from target model
         Q_expected, Q_targets = self.get_Q(states, actions, rewards, next_states, dones, gamma, is_train=True)
 
-        # Calculate error
-        errors = Q_expected - Q_targets
-        errors = errors.cpu().data.numpy().squeeze()
-
-        # update priority
-        if self.use_per:
-            assert((idx_tree is not None) and (len(idx_tree) > 0))
-            for i in range(self.memory.batch_size):
-                self.memory.update(idx_tree[i], errors[i])
-
         # Compute loss
         if self.use_per:
             assert ((is_weight is not None) and (is_weight.size > 0))
             is_weight = torch.from_numpy(is_weight).float().to(device)
-            loss = (is_weight * (Q_expected - Q_targets) ** 2).mean()
+            loss = (is_weight * F.smooth_l1_loss(Q_expected, Q_targets, reduction='none').squeeze()).mean()
         else:
             loss = F.mse_loss(Q_expected, Q_targets)
         
@@ -177,6 +169,14 @@ class Agent():
         
         # Update target network  
         self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
+
+        # update priority
+        if self.use_per:
+            assert((idx_tree is not None) and (len(idx_tree) > 0))
+            errors = Q_expected - Q_targets
+            errors = errors.cpu().data.numpy().squeeze()
+            for i in range(self.memory.batch_size):
+                self.memory.update(idx_tree[i], errors[i])
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.

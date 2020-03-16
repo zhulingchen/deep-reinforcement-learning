@@ -118,7 +118,7 @@ class PrioritizedReplayBuffer:
     epsilon = 0.01
     alpha = 0.6
     beta = 0.4
-    beta_increment_per_sampling = 0.001
+    beta_increment_per_sampling = 1e-3
 
     def __init__(self, capacity, batch_size):
         self.capacity = capacity
