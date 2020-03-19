@@ -8,9 +8,9 @@ import torch.optim as optim
 from model_ddpg import Actor, Critic
 from replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
-BUFFER_SIZE = int(1e5)  # replay buffer size
+BUFFER_SIZE = int(1e6)  # replay buffer size
 START_SIZE = 1024       # when to start training
-BATCH_SIZE = 1024       # minibatch size
+BATCH_SIZE = 512        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR_ACTOR = 1e-3         # learning rate of the actor
