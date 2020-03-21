@@ -23,6 +23,37 @@ The task is episodic, and in order to solve the environment, your agents must ge
 
 The environment is considered solved, when the average (over 100 episodes) of those **scores** is at least +0.5.
 
+### Dependencies
+
+1. Create (and activate) a new environment, for example, named `drlnd`, with Python 3.6.
+
+    - __Linux__ or __Mac__: 
+    ```bash
+    conda create --name drlnd python=3.6
+    source activate drlnd
+    ```
+    - __Windows__: 
+    ```bash
+    conda create --name drlnd python=3.6 
+    activate drlnd
+    ```
+
+2. Create an [IPython kernel](http://ipython.readthedocs.io/en/stable/install/kernel_install.html) for the `drlnd` environment.  
+    ```bash
+    python -m ipykernel install --user --name drlnd --display-name "drlnd"
+    ```
+
+3. Before running code in a notebook, change the kernel to match the `drlnd` environment by using the drop-down `Kernel` menu. 
+
+    ![Kernel][image0]
+
+4. Install the following dependent packages with `pip`:
+    - [numpy](https://www.numpy.org)==1.18.1  
+    - [matplotlib](https://matplotlib.org)==3.1.3  
+    - [unityagents](https://github.com/Unity-Technologies/ml-agents)==0.4.0  
+    - [torch](https://pytorch.org/)==1.0.0  
+    - [torchsummary](https://github.com/sksq96/pytorch-summary)==1.5.1
+
 ### Getting Started
 
 1. Download the environment from one of the links below.  You need only select the environment that matches your operating system:
