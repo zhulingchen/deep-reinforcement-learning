@@ -104,12 +104,12 @@ class Agent():
             # Convert torch tensor to numpy array
             states = states.cpu().data.numpy()
             actions = actions.cpu().data.numpy()
-            rewards = rewards.cpu().data.numpy().squeeze().tolist()
+            rewards = rewards.cpu().data.numpy().squeeze(1).tolist()
             next_states = next_states.cpu().data.numpy()
-            dones = dones.cpu().data.numpy().squeeze().astype(np.bool).tolist()
+            dones = dones.cpu().data.numpy().squeeze(1).astype(np.bool).tolist()
             # Calculate error
             errors = Q_expected - Q_targets
-            errors = errors.cpu().data.numpy().squeeze()
+            errors = errors.cpu().data.numpy().squeeze(1)
             for i in range(self.num_agents):
                 self.memory.add(states[i], actions[i], rewards[i], next_states[i], dones[i], errors[i])
         else:
